@@ -71,6 +71,9 @@ export default function RecipePage() {
       </header>
 
       <div className="recipe-detail">
+        {recipe.photo_url && (
+          <img src={recipe.photo_url} alt={recipe.title} className="recipe-photo" />
+        )}
         <div className="recipe-category-tag">{category?.emoji} {category?.name}</div>
         <h2 className="recipe-title">{recipe.title}</h2>
 
@@ -87,7 +90,7 @@ export default function RecipePage() {
             {recipe.ingredients.map((ing, i) => (
               <li key={i} className="ingredient-item">
                 <span className="ingredient-name">{ing.name}</span>
-                <span className="ingredient-amount">{formatAmount(ing.amount)} {ing.unit}</span>
+                {ing.amount > 0 && <span className="ingredient-amount">{formatAmount(ing.amount)} {ing.unit}</span>}
               </li>
             ))}
           </ul>

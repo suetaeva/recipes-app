@@ -12,6 +12,7 @@ export default function AddRecipe() {
   const { id } = useParams()
   const { addRecipe, updateRecipe } = useRecipes()
   const [loading, setLoading] = useState(!!id)
+  const [uploading, setUploading] = useState(false)
 
   const [form, setForm] = useState({
     title: '',
@@ -21,6 +22,7 @@ export default function AddRecipe() {
     steps: [''],
     tips: '',
     link: '',
+    photo_url: '',
   })
 
   useEffect(() => {
@@ -35,6 +37,7 @@ export default function AddRecipe() {
           steps: data.steps,
           tips: data.tips || '',
           link: data.link || '',
+          photo_url: data.photo_url || '',
         })
       }
       setLoading(false)
@@ -71,6 +74,19 @@ export default function AddRecipe() {
 
   function removeStep(i) {
     setField('steps', form.steps.filter((_, idx) => idx !== i))
+  }
+
+  async function handlePhotoUpload(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    setUploading(true)
+    const filename = `${Date.now()}-${file.name.replace(/\s/g, '_')}`
+    const { error } = await supabase.storage.from('recipe-photos').upload(filename, file)
+    if (!error) {
+      const { data: urlData } = supabase.storage.from('recipe-photos').getPublicUrl(filename)
+      setField('photo_url', urlData.publicUrl)
+    }
+    setUploading(false)
   }
 
   async function handleSubmit(e) {
@@ -209,6 +225,15 @@ export default function AddRecipe() {
             onChange={e => setField('link', e.target.value)}
             placeholder="https://..."
           />
+        </div>
+
+        <div className="form-group">
+          <label>Фото рецепта (необязательно)</label>
+          {form.photo_url && (
+            <img src={form.photo_url} alt="Превью" className="photo-preview" />
+          )}
+          <input type="file" accept="image/*" onChange={handlePhotoUpload} disabled={uploading} />
+          {uploading && <p style={{ color: '#9CA3AF', fontSize: '14px', margin: '4px 0 0' }}>Загрузка фото...</p>}
         </div>
 
         <button type="submit" className="btn-primary btn-submit">
