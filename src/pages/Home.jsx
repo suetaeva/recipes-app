@@ -4,7 +4,7 @@ import { useRecipes } from '../hooks/useRecipes'
 
 export default function Home() {
   const navigate = useNavigate()
-  const { getRecipesByCategory } = useRecipes()
+  const { getRecipesByCategory, loading } = useRecipes()
 
   return (
     <div className="page">
@@ -12,6 +12,8 @@ export default function Home() {
         <h1>Мои рецепты</h1>
         <button className="btn-add" onClick={() => navigate('/add')}>+ Добавить</button>
       </header>
+
+      {loading && <p style={{color:'#9CA3AF', textAlign:'center', padding:'20px'}}>Загрузка...</p>}
 
       <div className="categories-grid">
         {CATEGORIES.map(cat => {

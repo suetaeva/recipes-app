@@ -1,29 +1,34 @@
 import { useState, useEffect } from 'react'
-import { SAMPLE_RECIPES } from '../data/recipes'
-
-const STORAGE_KEY = 'recipes-app-data'
+import { supabase } from '../supabase'
 
 export function useRecipes() {
-  const [recipes, setRecipes] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : SAMPLE_RECIPES
-  })
+  const [recipes, setRecipes] = useState([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes))
-  }, [recipes])
+    fetchRecipes()
+  }, [])
 
-  function addRecipe(recipe) {
-    const newRecipe = { ...recipe, id: Date.now().toString() }
-    setRecipes(prev => [...prev, newRecipe])
-    return newRecipe.id
+  async function fetchRecipes() {
+    setLoading(true)
+    const { data } = await supabase.from('recipes').select('*').order('created_at', { ascending: false })
+    if (data) setRecipes(data)
+    setLoading(false)
   }
 
-  function updateRecipe(id, updated) {
-    setRecipes(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r))
+  async function addRecipe(recipe) {
+    const { data } = await supabase.from('recipes').insert([recipe]).select().single()
+    if (data) setRecipes(prev => [data, ...prev])
+    return data?.id
   }
 
-  function deleteRecipe(id) {
+  async function updateRecipe(id, updated) {
+    const { data } = await supabase.from('recipes').update(updated).eq('id', id).select().single()
+    if (data) setRecipes(prev => prev.map(r => r.id === id ? data : r))
+  }
+
+  async function deleteRecipe(id) {
+    await supabase.from('recipes').delete().eq('id', id)
     setRecipes(prev => prev.filter(r => r.id !== id))
   }
 
@@ -35,5 +40,5 @@ export function useRecipes() {
     return recipes.find(r => r.id === id)
   }
 
-  return { recipes, addRecipe, updateRecipe, deleteRecipe, getRecipesByCategory, getRecipeById }
+  return { recipes, loading, addRecipe, updateRecipe, deleteRecipe, getRecipesByCategory, getRecipeById }
 }
