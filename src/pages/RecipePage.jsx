@@ -1,15 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CATEGORIES } from '../data/recipes'
-import { useRecipes } from '../hooks/useRecipes'
+import { supabase } from '../supabase'
 
 export default function RecipePage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { getRecipeById, deleteRecipe } = useRecipes()
+  const [recipe, setRecipe] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [servings, setServings] = useState(1)
 
-  const recipe = getRecipeById(id)
-  const [servings, setServings] = useState(recipe?.servings || 1)
+  useEffect(() => {
+    async function fetchRecipe() {
+      try {
+        const { data, error } = await supabase.from('recipes').select('*').eq('id', id).single()
+        console.log('fetch result:', data, error)
+        if (data) {
+          setRecipe(data)
+          setServings(data.servings)
+        }
+      } catch (e) {
+        console.error('fetch error:', e)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchRecipe()
+  }, [id])
+
+  async function handleDelete() {
+    if (confirm(`Удалить рецепт "${recipe.title}"?`)) {
+      await supabase.from('recipes').delete().eq('id', id)
+      navigate(-1)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="page">
+        <p style={{ color: '#9CA3AF', textAlign: 'center', padding: '40px' }}>Загрузка...</p>
+      </div>
+    )
+  }
 
   if (!recipe) {
     return (
@@ -26,13 +58,6 @@ export default function RecipePage() {
   function formatAmount(amount) {
     const val = amount * ratio
     return val % 1 === 0 ? val : parseFloat(val.toFixed(1))
-  }
-
-  function handleDelete() {
-    if (confirm(`Удалить рецепт "${recipe.title}"?`)) {
-      deleteRecipe(id)
-      navigate(-1)
-    }
   }
 
   return (

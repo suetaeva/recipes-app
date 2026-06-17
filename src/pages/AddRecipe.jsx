@@ -55,7 +55,7 @@ export default function AddRecipe() {
     setField('steps', form.steps.filter((_, idx) => idx !== i))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     const cleaned = {
       ...form,
@@ -66,10 +66,10 @@ export default function AddRecipe() {
       steps: form.steps.filter(s => s.trim()),
     }
     if (existing) {
-      updateRecipe(id, cleaned)
+      await updateRecipe(id, cleaned)
       navigate(`/recipe/${id}`)
     } else {
-      const newId = addRecipe(cleaned)
+      const newId = await addRecipe(cleaned)
       navigate(`/recipe/${newId}`)
     }
   }
