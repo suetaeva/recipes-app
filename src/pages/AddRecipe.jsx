@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { CATEGORIES } from '../data/recipes'
 import { useRecipes } from '../hooks/useRecipes'
+import { supabase } from '../supabase'
 
 const EMPTY_INGREDIENT = { name: '', amount: '', unit: 'г' }
 const UNITS = ['г', 'кг', 'мл', 'л', 'шт', 'ст.л.', 'ч.л.', 'стакан', 'щепотка', 'по вкусу']
@@ -9,19 +10,36 @@ const UNITS = ['г', 'кг', 'мл', 'л', 'шт', 'ст.л.', 'ч.л.', 'ста
 export default function AddRecipe() {
   const navigate = useNavigate()
   const { id } = useParams()
-  const { addRecipe, updateRecipe, getRecipeById } = useRecipes()
-
-  const existing = id ? getRecipeById(id) : null
+  const { addRecipe, updateRecipe } = useRecipes()
+  const [loading, setLoading] = useState(!!id)
 
   const [form, setForm] = useState({
-    title: existing?.title || '',
-    category: existing?.category || 'main',
-    servings: existing?.servings || 4,
-    ingredients: existing?.ingredients || [{ ...EMPTY_INGREDIENT }],
-    steps: existing?.steps || [''],
-    tips: existing?.tips || '',
-    link: existing?.link || '',
+    title: '',
+    category: 'main',
+    servings: 4,
+    ingredients: [{ ...EMPTY_INGREDIENT }],
+    steps: [''],
+    tips: '',
+    link: '',
   })
+
+  useEffect(() => {
+    if (!id) return
+    supabase.from('recipes').select('*').eq('id', id).single().then(({ data }) => {
+      if (data) {
+        setForm({
+          title: data.title,
+          category: data.category,
+          servings: data.servings,
+          ingredients: data.ingredients.map(i => ({ ...i, amount: String(i.amount) })),
+          steps: data.steps,
+          tips: data.tips || '',
+          link: data.link || '',
+        })
+      }
+      setLoading(false)
+    })
+  }, [id])
 
   function setField(field, value) {
     setForm(f => ({ ...f, [field]: value }))
@@ -65,7 +83,7 @@ export default function AddRecipe() {
         .map(ing => ({ ...ing, amount: Number(ing.amount) })),
       steps: form.steps.filter(s => s.trim()),
     }
-    if (existing) {
+    if (id) {
       await updateRecipe(id, cleaned)
       navigate(`/recipe/${id}`)
     } else {
@@ -74,11 +92,19 @@ export default function AddRecipe() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="page">
+        <p style={{ color: '#9CA3AF', textAlign: 'center', padding: '40px' }}>Загрузка...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="page">
       <header className="page-header">
         <button className="btn-back" onClick={() => navigate(-1)}>← Назад</button>
-        <h2>{existing ? 'Изменить рецепт' : 'Новый рецепт'}</h2>
+        <h2>{id ? 'Изменить рецепт' : 'Новый рецепт'}</h2>
       </header>
 
       <form className="recipe-form" onSubmit={handleSubmit}>
