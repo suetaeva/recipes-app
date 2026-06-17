@@ -212,7 +212,7 @@ export default function AddRecipe() {
         </div>
 
         <button type="submit" className="btn-primary btn-submit">
-          {existing ? 'Сохранить изменения' : 'Добавить рецепт'}
+          {id ? 'Сохранить изменения' : 'Добавить рецепт'}
         </button>
       </form>
     </div>
